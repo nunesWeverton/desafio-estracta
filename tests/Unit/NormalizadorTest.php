@@ -22,3 +22,14 @@ describe('texto', function () {
         expect(fn () => Normalizador::texto($latin1))->toThrow(InvalidArgumentException::class);
     });
 });
+describe('somenteDigitos', function () {
+    it('remove a máscara e preserva zeros à esquerda', function (?string $entrada, ?string $esperado) {
+        expect(Normalizador::somenteDigitos($entrada))->toBe($esperado);
+    })->with([
+        'CNPJ mascarado' => ['00.012.345/0001-09', '00012345000109'],
+        'inscrição estadual mascarada' => ['001.234.567', '001234567'],
+        'com espaços e nbsp' => [" 012\u{00A0}345 ", '012345'],
+        'sem dígitos vira null' => ['---', null],
+        'null continua null' => [null, null],
+    ]);
+});

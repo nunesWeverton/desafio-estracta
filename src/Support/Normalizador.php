@@ -32,4 +32,15 @@ final class Normalizador
 
         return $limpo === '' ? null : $limpo;
     }
+    public static function somenteDigitos(?string $valor): ?string{
+
+        $texto = self::texto($valor);
+
+        if($texto === null){
+            return null;
+        }
+        $digitos = (string) preg_replace('/\D+/', '', $texto);
+
+        return $digitos === '' ? null : $digitos;
+    }
 }
