@@ -21,8 +21,9 @@ try {
     $consulta = new Consulta($argv[1]);
     $cadastro = (new SefazBaSpider())->consultar($consulta);
 
-    echo json_encode($cadastro, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), PHP_EOL;
+    echo json_encode($cadastro, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), PHP_EOL;
 } catch (Throwable $exception) {
-    fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+    // O tipo da exceção indica a categoria: CadastroNaoEncontradoException, PortalIndisponivelException...
+    fwrite(STDERR, (new ReflectionClass($exception))->getShortName() . ': ' . $exception->getMessage() . PHP_EOL);
     exit(1);
 }

@@ -11,7 +11,7 @@ use ProvaSpider\Exception\RespostaInesperadaException;
 it('mantém todas as falhas da consulta sob ConsultaException, como exige o contrato do Spider', function (ConsultaException $excecao) {
     expect($excecao)->toBeInstanceOf(ConsultaException::class);
 })->with([
-    'cadastro não encontrado' => fn () => CadastroNaoEncontradoException::paraCnpj('00000000000191'),
+    'Cnpj incorreto - dígito verificador !' => fn () => CadastroNaoEncontradoException::paraCnpj('00000000000191'),
     'falha HTTP' => fn () => FalhaHttpException::comStatus(500, 'https://exemplo.test'),
     'portal indisponível' => fn () => PortalIndisponivelException::emManutencao(),
     'resposta inesperada' => fn () => RespostaInesperadaException::estruturaNaoReconhecida('tabela ausente'),
