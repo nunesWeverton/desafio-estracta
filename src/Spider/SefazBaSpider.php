@@ -9,6 +9,7 @@ use ProvaSpider\Exception\CadastroNaoEncontradoException;
 use ProvaSpider\Exception\FalhaHttpException;
 use ProvaSpider\Exception\PortalIndisponivelException;
 use ProvaSpider\Exception\RespostaInesperadaException;
+use ProvaSpider\Http\HttpResponse;
 use ProvaSpider\Http\HttpTransport;
 use ProvaSpider\Http\StreamHttpTransport;
 use ProvaSpider\Parser\CadastroHtmlParser;
@@ -16,8 +17,10 @@ use ProvaSpider\ValueObject\CadastroContribuinte;
 use ProvaSpider\ValueObject\Consulta;
 
 /**
- * O formulário de consultaBa.asp envia um POST para result.asp, que devolve o
- * cadastro direto: não há cookie, sessão, captcha ou etapa intermediária.
+ * Faz o que o navegador faz: abre consultaBa.asp, que inicia a sessão do portal,
+ * e envia o formulário para result.asp com o mesmo transporte (mesmos cookies).
+ * Sem a sessão, o portal responde 404 nas páginas de aviso, como acontece no
+ * navegador quando o formulário fica muito tempo aberto.
  */
 final class SefazBaSpider implements Spider
 {
@@ -38,6 +41,11 @@ final class SefazBaSpider implements Spider
      */
     public function consultar(Consulta $consulta): CadastroContribuinte
     {
+        $formulario = $this->http->get(self::URL);
+        if (!$formulario->sucesso()) {
+            throw $this->falhaDeStatus($formulario, self::URL);
+        }
+
         // Campos enviados pelo formulário ao clicar em "CNPJ ->" (observados no DevTools).
         $resposta = $this->http->post(self::URL_RESULTADO, [
             'sefp' => '1',
@@ -58,15 +66,23 @@ final class SefazBaSpider implements Spider
             throw CadastroNaoEncontradoException::paraCnpj($consulta->cnpj);
         }
 
-        if (in_array($resposta->statusCode, [502, 503, 504], true) || $this->parser->indicaManutencao($resposta->body)) {
+        if ($this->parser->indicaManutencao($resposta->body)) {
             throw PortalIndisponivelException::emManutencao();
         }
 
         if (!$resposta->sucesso()) {
-            echo($resposta->body);
-            throw FalhaHttpException::comStatus($resposta->statusCode, self::URL_RESULTADO);
+            throw $this->falhaDeStatus($resposta, self::URL_RESULTADO);
         }
+        
+        throw RespostaInesperadaException::estruturaNaoReconhecida(
+            sprintf('a página não traz o cadastro. O portal respondeu: "%s"', $this->parser->resumo($resposta->body)),
+        );
+    }
 
-        throw RespostaInesperadaException::estruturaNaoReconhecida('a página não traz CNPJ e razão social do cadastro');
+    private function falhaDeStatus(HttpResponse $resposta, string $url): PortalIndisponivelException|FalhaHttpException
+    {
+        return in_array($resposta->statusCode, [502, 503, 504], true)
+            ? PortalIndisponivelException::emManutencao()
+            : FalhaHttpException::comStatus($resposta->statusCode, $url);
     }
 }

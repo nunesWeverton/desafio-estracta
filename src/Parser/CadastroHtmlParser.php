@@ -26,9 +26,9 @@ use ProvaSpider\ValueObject\CadastroContribuinte;
  */
 final class CadastroHtmlParser
 {
-    private const SEM_CADASTRO = '/n[aã]o (foi|foram) (encontrad|localizad)|nenhum (registro|contribuinte|cadastro)'
-        . '|n[aã]o (existe|h[aá]) (registro|contribuinte|cadastro)|n[aã]o (est[aá] )?cadastrad|inexistente/u';
-
+   private const SEM_CADASTRO = '/n[aã]o (foi|foram) (encontrad|localizad)|nenhum (registro|contribuinte|cadastro)'
+        . '|n[aã]o (existe|h[aá]) (registro|contribuinte|cadastro)|n[aã]o (est[aá] )?cadastrad|inexistente'
+        . '|cnpj incorreto/u';
     private const MANUTENCAO = '/manuten[cç][aã]o|fora do ar|temporariamente indispon/u';
 
     private const ACENTOS = [
@@ -163,6 +163,11 @@ final class CadastroHtmlParser
         return $partes === [] ? null : implode(' - ', $partes);
     }
 
+        /** Começo do texto visível da página, para mostrar o que o portal respondeu. */
+    public function resumo(string $html): string
+    {
+        return mb_substr((string) Normalizador::texto($this->carregar($html)->textContent), 0, 150);
+    }
     /** "Situação Cadastral Vigente:" → "situacaocadastralvigente" */
     private function chave(string $texto): string
     {
